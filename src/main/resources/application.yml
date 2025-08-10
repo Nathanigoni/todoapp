@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: todo-api
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/tododb
+      database: tododb
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+jwt:
+  secret: MySuperSecretKey
+  expiration: 86400000
