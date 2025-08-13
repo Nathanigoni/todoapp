@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.annotation.Validated;
@@ -32,10 +33,28 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@Validated @RequestBody AuthRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
-            return ResponseEntity.badRequest().body("Email is already taken");
+        String login = request.getLogin();
+        boolean isEmail = login.contains("@");
+
+        if (isEmail) {
+            if (userRepository.existsByEmail(login)) {
+                return ResponseEntity.badRequest().body("Email is already taken");
+            }
+        } else {
+            if (userRepository.existsByUsername(login)) {
+                return ResponseEntity.badRequest().body("Username is already taken");
+            }
         }
-        User user = new User(request.getEmail(), passwordEncoder.encode(request.getPassword()));
+
+        User user = new User();
+        if (isEmail) {
+            user.setEmail(login);
+            user.setUsername(login.split("@")[0]); // Optional: derive username from email
+        } else {
+            user.setUsername(login);
+        }
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+
         userRepository.save(user);
         return ResponseEntity.ok("User registered successfully");
     }
@@ -43,13 +62,21 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@Validated @RequestBody AuthRequest request) {
         try {
-            authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+            // Authenticate using username or email
+            User user = userRepository.findByEmail(request.getLogin())
+                    .or(() -> userRepository.findByUsername(request.getLogin()))
+                    .orElseThrow(() -> new RuntimeException("Invalid username/email or password"));
+
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(user.getUsername(), request.getPassword())
             );
-            String token = jwtUtil.generateToken(request.getEmail());
+
+            // Generate JWT
+            String token = jwtUtil.generateToken(authentication.getName());
+
             return ResponseEntity.ok(new AuthResponse(token));
-        } catch (AuthenticationException ex) {
-            return ResponseEntity.status(401).body("Invalid credentials");
+        } catch (AuthenticationException e) {
+            return ResponseEntity.status(401).body("Invalid username/email or password");
         }
     }
 }

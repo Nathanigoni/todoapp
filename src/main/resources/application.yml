@@ -1,16 +1,16 @@
 server:
-  port: 8083
+  port: 8084
 
 spring:
   application:
     name: todo-api
   data:
     mongodb:
-      uri: mongodb+srv://fahd:virus123m@cluster0.u1fysxi.mongodb.net/tododb?retryWrites=true&w=majority
+      uri: mongodb+srv://usnow02:miminatekoko@cluster0.dwpolo1.mongodb.net/tododb?retryWrites=true&w=majority&appName=Cluster0
   jackson:
     serialization:
       write-dates-as-timestamps: false
 
 jwt:
-  secret: MySuperSecretKey
+  secret: bXlTdXBlclNlY3JldEtleVNob3VsZEJlVGhpcy1Mb25nUGFzc3dvcmQh
   expiration: 86400000
